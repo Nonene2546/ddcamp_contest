@@ -9,8 +9,7 @@ Port(
   Clk         : in    std_logic;                        -- Clock input
     
   SerDataIn   : in    std_logic;                        -- Serial data input
-  
-  RxFfFull    : in    std_logic;                        -- Receiver FIFO full indicator
+
   RxFfWrData  : out   std_logic_vector(7 downto 0);     -- Receiver FIFO write data output
   RxFfWrEn    : out   std_logic                         -- Receiver FIFO write enable output
 );
