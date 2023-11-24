@@ -5,14 +5,14 @@ use IEEE.STD_LOGIC_UNSIGNED.all;
 
 Entity RxSerial Is  
 Port(
-  RstB        : in    std_logic;       -- Reset input
-  Clk         : in    std_logic;       -- Clock input
+  RstB        : in    std_logic;                        -- Reset input
+  Clk         : in    std_logic;                        -- Clock input
+    
+  SerDataIn   : in    std_logic;                        -- Serial data input
   
-  SerDataIn   : in    std_logic;       -- Serial data input
-  
-  RxFfFull    : in    std_logic;       -- Receiver FIFO full indicator
-  RxFfWrData  : out   std_logic_vector(7 downto 0);  -- Receiver FIFO write data output
-  RxFfWrEn    : out   std_logic        -- Receiver FIFO write enable output
+  RxFfFull    : in    std_logic;                        -- Receiver FIFO full indicator
+  RxFfWrData  : out   std_logic_vector(7 downto 0);     -- Receiver FIFO write data output
+  RxFfWrEn    : out   std_logic                         -- Receiver FIFO write enable output
 );
 End Entity RxSerial;
 
@@ -35,17 +35,17 @@ Architecture rtl Of RxSerial Is
 			stStop	, -- Stop bit detection state
 			stLoad    -- Load data to FIFO state
 		);
-	signal rState : SerStateType; -- State variable
+	signal rState : SerStateType;                           -- State variable
 	
-	signal	rSerDataIn	: std_logic; -- Registered serial data input
+	signal	rSerDataIn	: std_logic;                        -- Registered serial data input
 
-	signal	rBaudCnt	: std_logic_vector(6 downto 0); -- Baud rate counter
-	signal	rBaudEnd	: std_logic; -- Flag indicating the end of a baud period
+	signal	rBaudCnt	: std_logic_vector(6 downto 0);     -- Baud rate counter
+	signal	rBaudEnd	: std_logic;                        -- Flag indicating the end of a baud period
 
-	signal	rDataCnt	: std_logic_vector(3 downto 0); -- Data bit counter
+	signal	rDataCnt	: std_logic_vector(3 downto 0);     -- Data bit counter
 
-	signal	rRxFfWrData	: std_logic_vector(7 downto 0); -- Data to be written to the FIFO
-	signal	rRxFfWrEn	: std_logic; -- FIFO write enable signal
+	signal	rRxFfWrData	: std_logic_vector(7 downto 0);     -- Data to be written to the FIFO
+	signal	rRxFfWrEn	: std_logic;                        -- FIFO write enable signal
 
 Begin
 
@@ -69,15 +69,15 @@ Begin
 	begin
 		if (rising_edge(Clk)) then
 			if (RstB = '0') then
-				rBaudCnt	<=	(others => '0'); -- Reset counter on active-low reset
+				rBaudCnt	<=	(others => '0'); 	-- Reset counter on active-low reset
 			elsif (rBaudCnt = conv_std_logic_vector(cBaudRate,10)) then
-				rBaudCnt	<=	(others => '0'); -- Reset counter at the end of a baud period
+				rBaudCnt	<=	(others => '0'); 	-- Reset counter at the end of a baud period
 			elsif (rState = stStart and rBaudCnt(5) = '1') then
-				rBaudCnt	<=	(others => '0'); -- Reset counter at the middle of the start bit
+				rBaudCnt	<=	(others => '0'); 	-- Reset counter at the middle of the start bit
 			elsif (rState = stIdle) then
-				rBaudCnt	<=	(others => '0'); -- Reset counter in idle state
+				rBaudCnt	<=	(others => '0'); 	-- Reset counter in idle state
 			else
-				rBaudCnt	<=	rBaudCnt + 1; -- Increment counter otherwise
+				rBaudCnt	<=	rBaudCnt + 1;		-- Increment counter otherwise
 			end if;
 		end if;
 	end process u_rBaudCnt;
