@@ -23,7 +23,7 @@ Architecture rtl Of RxSerial Is
 ----------------------------------------------------------------------------------
 
 	constant	cBaudRate		:	integer	:=	108;
-	constant	cHalfBaudRate	:	integer :=	54;
+	-- constant	cHalfBaudRate	:	integer :=	54;
 
 ----------------------------------------------------------------------------------
 -- Signal declaration
@@ -40,7 +40,7 @@ Architecture rtl Of RxSerial Is
 	
 	signal	rSerDataIn	: std_logic;
 
-	signal	rBaudCnt	: std_logic_vector(9 downto 0);
+	signal	rBaudCnt	: std_logic_vector(6 downto 0);
 	signal	rBaudEnd	: std_logic;
 
 	signal	rDataCnt	: std_logic_vector(3 downto 0);
@@ -70,15 +70,15 @@ Begin
 	begin
 		if (rising_edge(Clk)) then
 			if (RstB = '0') then
-				rBaudCnt	<=	conv_std_logic_vector(cBaudRate,10);
-			elsif (rBaudCnt = 1) then
-				rBaudCnt	<=	conv_std_logic_vector(cBaudRate,10);
-			elsif (rState = stStart and rBaudCnt = conv_std_logic_vector(cHalfBaudRate,10)) then
-				rBaudCnt	<=	conv_std_logic_vector(cBaudRate,10);
+				rBaudCnt	<=	(others => '0');
+			elsif (rBaudCnt = conv_std_logic_vector(cBaudRate,10)) then
+				rBaudCnt	<=	(others => '0');
+			elsif (rState = stStart and rBaudCnt(5) = '1') then
+				rBaudCnt	<=	(others => '0');
 			elsif (rState = stIdle) then
-				rBaudCnt	<=	conv_std_logic_vector(cBaudRate,10);
+				rBaudCnt	<=	(others => '0');
 			else
-				rBaudCnt	<=	rBaudCnt - 1;
+				rBaudCnt	<=	rBaudCnt + 1;
 			end if;
 		end if;
 	end process u_rBaudCnt;
@@ -88,10 +88,10 @@ Begin
 		if (rising_edge(Clk)) then
 			if (RstB = '0') then
 				rBaudEnd	<=	'0';
-			elsif (rBaudCnt = 1) then
+			elsif (rBaudCnt = conv_std_logic_vector(cBaudRate,10)) then
 				rBaudEnd	<=	'1';
 			else 
-				rBaudEnd	<= '0';
+				rBaudEnd	<=	'0';
 			end if;
 		end if;
 	end process u_rBaudEnd;
@@ -174,7 +174,7 @@ Begin
 						end if;
 					
 					when stStart =>
-						if (rBaudCnt = conv_std_logic_vector(cHalfBaudRate,10)) then
+						if (rBaudCnt(5) = '1') then
 							rState <= stData;
 						else
 							rState <= stStart;
