@@ -31,7 +31,6 @@ Architecture rtl Of RxSerial Is
 	type SerStateType is
 		(
 			stIdle	,
-			stStart	,
 			stData	,
 			stStop	,
 			stLoad
@@ -73,10 +72,12 @@ Begin
 				rBaudCnt	<=	(others => '0');
 			elsif (rBaudCnt = conv_std_logic_vector(cBaudRate,10)) then
 				rBaudCnt	<=	(others => '0');
-			elsif (rState = stStart and rBaudCnt(5) = '1') then
+			elsif (rState = stIdle and rBaudCnt(5) = '1') then
 				rBaudCnt	<=	(others => '0');
-			elsif (rState = stIdle) then
+			elsif (rState = stStop and rBaudEnd = '1') then
 				rBaudCnt	<=	(others => '0');
+			elsif (rState = stIdle and SerDataIn = '1') then
+				rBaudCnt	<= 	(others => '0');
 			else
 				rBaudCnt	<=	rBaudCnt + 1;
 			end if;
@@ -108,7 +109,7 @@ Begin
 					else
 						rDataCnt <= rDataCnt + 1;
 					end if ;
-				elsif (rState = stStart) then
+				elsif (rState = stIdle) then
 					rDataCnt <= (others => '0');
 				else
 					rDataCnt <=	rDataCnt;
@@ -167,17 +168,10 @@ Begin
 			else
 				case (rState) is
 					when stIdle =>
-						if (rSerDataIn = '0') then
-							rState <= stStart;
-						else
-							rState <= stIdle;
-						end if;
-					
-					when stStart =>
 						if (rBaudCnt(5) = '1') then
 							rState <= stData;
 						else
-							rState <= stStart;
+							rState <= stIdle;
 						end if;
 					
 					when stData =>
