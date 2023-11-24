@@ -56,18 +56,18 @@ Architecture rtl Of UserWrDdr Is
 ----------------------------------------------------------------------------------
 	
 	signal	rMemInitDone	: std_logic_vector( 1 downto 0 );
-	signal	rMtDdrWrReq		: std_logic;
-	signal	rMtDdrWrAddr	: std_logic_vector(28 downto 7);
+	signal	rMtDdrWrReq		: std_logic; -- Memory write request signal
+	signal	rMtDdrWrAddr	: std_logic_vector(28 downto 7); -- Memory write address signal
 	
-	signal	rDataCnt		: integer range 0 to 31;
-	signal	rWrFfWrEn		: std_logic;
+	signal	rDataCnt		: std_logic_vector(5 downto 0); -- Data counter for address generation
+	signal	rWrFfWrEn		: std_logic; -- Write enable for the FIFO write operation
 	
 	type SerStateType Is 
 						(
-							stInit,
-							stIdle,
-							stWrite,
-							stEnd
+							stInit,   -- Memory initialization state
+							stReq,    -- Request state (Request write then wait for ddr to accept request -> MtDdrWrBusy = '1')
+							stAddr,   -- Changing the address
+							stEnd     -- End state (Wait for ddr ready for a new request -> MtDdrWrBusy = '0')
 						);
 						
 	signal rState		: SerStateType;
@@ -105,31 +105,31 @@ Begin
 	Begin
 		if(rising_edge(Clk)) then
 			if(RstB = '0') then
-				rState <= stInit;
+				rState <= stInit; -- Reset state machine on active-low reset
 			else
 				case (rState) Is
 					when stInit =>
 						if(rMemInitDone(1) = '1') then
-							rState <= stIdle;
+							rState <= stReq; -- Transition to idle state after memory initialization
 						else
-							rState <= stInit;
+							rState <= stInit; -- Stay in initialization state otherwise
 						end if;
 					
-					when stIdle =>
+					when stReq =>
 						if (MtDdrWrBusy = '1') then
-							rState <= stWrite;
+							rState <= stAddr; -- Transition to write state if MtDdrWrBusy = '1' (ddr has accept previous request)
 						else
-							rState <= stIdle;
+							rState <= stReq; -- Stay in idle state otherwise
 						end if;
 					
-					when stWrite =>
+					when stAddr =>
 						rState <= stEnd;
 					
 					when stEnd =>
 						if (MtDdrWrBusy = '0') then
-							rState <= stIdle;
+							rState <= stReq; -- Transition back to idle state when memory write is not busy
 						else
-							rState <= stEnd;
+							rState <= stEnd; -- Stay in end state otherwise
 						end if;
 
 				end case;
@@ -141,11 +141,11 @@ Begin
 	Begin
 		if(rising_edge(Clk)) then
 			if(RstB = '0') then
-				rMtDdrWrReq <= '0';
-			elsif(rState = stIdle) then
-				rMtDdrWrReq <= '1';
+				rMtDdrWrReq <= '0'; -- Clear memory write request on active-low reset
+			elsif(rState = stReq) then
+				rMtDdrWrReq <= '1'; -- Set memory write request in request state
 			else
-				rMtDdrWrReq <= '0';
+				rMtDdrWrReq <= '0'; -- Clear memory write request otherwise
 			end if;
 		end if;
 	end process;
@@ -154,22 +154,22 @@ Begin
 	Begin
 		if(rising_edge(Clk)) then
 			if(RstB = '0') then
-				rMtDdrWrAddr(28 downto 7) <= "00" & x"05FE0";
-			elsif(rState = stWrite) then
-				if(rMtDdrWrAddr(26 downto 7) = 31) then
+				rMtDdrWrAddr(28 downto 7) <= "00" & x"05FE0"; -- Initialize memory write address on active-low reset
+			elsif(rState = stAddr) then
+				if(rMtDdrWrAddr(26 downto 7) = 31) then -- If address has reach the end
 					if(rMtDdrWrAddr(28 downto 27) = "11") then
-						rMtDdrWrAddr(28 downto 27) <= "00";
+						rMtDdrWrAddr(28 downto 27) <= "00"; -- If it has write all 4 picture, Reset address to picture no.0
 					else
-						rMtDdrWrAddr(28 downto 27) <= rMtDdrWrAddr(28 downto 27) + 1;
+						rMtDdrWrAddr(28 downto 27) <= rMtDdrWrAddr(28 downto 27) + 1; -- If not, Increment the picture no.
 					end if;
 					
-					rMtDdrWrAddr(26 downto 7) <= x"05FE0";
+					rMtDdrWrAddr(26 downto 7) <= x"05FE0"; -- Reset lower bits of write address
 				else
 					if(rMtDdrWrAddr(11 downto 7) = 31) then
-						rMtDdrWrAddr(26 downto 12) <= rMtDdrWrAddr(26 downto 12) - 1;
-						rMtDdrWrAddr(11 downto 7) <= (others => '0');
+						rMtDdrWrAddr(26 downto 12) <= rMtDdrWrAddr(26 downto 12) - 1; -- Decrement the row
+						rMtDdrWrAddr(11 downto 7) <= (others => '0'); -- Reset the column
 					else
-						rMtDdrWrAddr(11 downto 7) <= rMtDdrWrAddr(11 downto 7) + 1;
+						rMtDdrWrAddr(11 downto 7) <= rMtDdrWrAddr(11 downto 7) + 1; -- Increment the column
 					end if;
 				end if;
 			end if;
