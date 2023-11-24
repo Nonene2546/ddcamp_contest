@@ -42,7 +42,7 @@ Architecture rtl Of RxSerial Is
 	signal	rBaudCnt	: std_logic_vector(6 downto 0);     -- Baud rate counter
 	signal	rBaudEnd	: std_logic;                        -- Flag indicating the end of a baud period
 
-	signal	rDataCnt	: std_logic_vector(3 downto 0);     -- Data bit counter
+	signal	rDataCnt	: std_logic_vector(2 downto 0);     -- Data bit counter
 
 	signal	rRxFfWrData	: std_logic_vector(7 downto 0);     -- Data to be written to the FIFO
 	signal	rRxFfWrEn	: std_logic;                        -- FIFO write enable signal
@@ -99,18 +99,18 @@ Begin
 	begin
 		if (rising_edge(Clk)) then
 			if (RstB = '0') then
-				rDataCnt(3 downto 0) <= (others => '0'); -- Reset data counter on active-low reset
+				rDataCnt(2 downto 0) <= (others => '0'); -- Reset data counter on active-low reset
 			else
 				if (rBaudEnd = '1') then
-					if (rDataCnt(3 downto 0) = 7) then
-						rDataCnt(3 downto 0) <= (others => '0'); -- Reset data counter at the end of 8 bits
+					if (rDataCnt(2 downto 0) = 7) then
+						rDataCnt(2 downto 0) <= (others => '0'); -- Reset data counter at the end of 8 bits
 					else
-						rDataCnt(3 downto 0) <= rDataCnt(3 downto 0) + 1; -- Increment data counter otherwise
+						rDataCnt(2 downto 0) <= rDataCnt(2 downto 0) + 1; -- Increment data counter otherwise
 					end if ;
 				elsif (rState = stStart) then
-					rDataCnt(3 downto 0) <= (others => '0'); -- Reset data counter in the start state
+					rDataCnt(2 downto 0) <= (others => '0'); -- Reset data counter in the start state
 				else
-					rDataCnt(3 downto 0) <=	rDataCnt(3 downto 0); -- Maintain data counter otherwise
+					rDataCnt(2 downto 0) <=	rDataCnt(2 downto 0); -- Maintain data counter otherwise
 				end if;
 			end if;
 		end if;
