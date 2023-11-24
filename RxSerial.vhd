@@ -29,7 +29,7 @@ Architecture rtl Of RxSerial Is
 ----------------------------------------------------------------------------------
 	type SerStateType is
 		(
-			stIdle	, -- Idle state (reset baud rate counter)
+			stRst	, -- Idle state (reset baud rate counter)
 			stStart	, -- Start bit detection state
 			stData	, -- Data bit reception state
 			stStop	, -- Stop bit detection state
@@ -74,7 +74,7 @@ Begin
 				rBaudCnt(6 downto 0)	<=	(others => '0'); 	-- Reset counter at the end of a baud period
 			elsif (rState = stStart and rBaudCnt(5) = '1') then
 				rBaudCnt(6 downto 0)	<=	(others => '0'); 	-- Reset counter at the middle of the start bit
-			elsif (rState = stIdle) then
+			elsif (rState = stRst) then
 				rBaudCnt(6 downto 0)	<=	(others => '0'); 	-- Reset counter in idle state
 			else
 				rBaudCnt(6 downto 0)	<=	rBaudCnt(6 downto 0) + 1;		-- Increment counter otherwise
@@ -162,14 +162,14 @@ Begin
 	begin
 		if rising_edge(Clk) then
 			if (RstB = '0') then
-				rState <= stIdle; -- Reset state machine on active-low reset
+				rState <= stRst; -- Reset state machine on active-low reset
 			else
 				case (rState) is
-					when stIdle =>
+					when stRst =>
 						if (rSerDataIn = '0') then
 							rState <= stStart; -- Transition to start state on detecting a start bit
 						else
-							rState <= stIdle; -- Stay in idle state otherwise
+							rState <= stRst; -- Stay in idle state otherwise
 						end if;
 					
 					when stStart =>
@@ -191,14 +191,14 @@ Begin
 							if (rSerDataIn = '1') then
 								rState <= stLoad; -- Transition to load state on detecting a stop bit
 							else
-								rState <= stIdle; -- Return to idle state if no stop bit is detected
+								rState <= stRst; -- Return to idle state if no stop bit is detected
 							end if;
 						else
 							rState <= stStop; -- Stay in stop state otherwise
 						end if;
 					
 					when stLoad	=>
-						rState <= stIdle; -- Transition back to idle state after loaded
+						rState <= stRst; -- Transition back to idle state after loaded
 					
 				end case;
 	
