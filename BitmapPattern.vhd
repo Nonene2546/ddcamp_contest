@@ -112,16 +112,16 @@ Begin
     Begin
         if (rising_edge(Clk)) then
             if (RstB = '0') then
-                rHdCnt <= (others => '0');                          -- Reset header count on active-low reset
+                rHdCnt(5 downto 0) <= (others => '0');                          -- Reset header count on active-low reset
             else
                 if (rState = stHeader) then
                     if (RxWrEn = '1') then
-                        rHdCnt <= rHdCnt + 1;                       -- Increment header count on RX write enable
+                        rHdCnt(5 downto 0) <= rHdCnt(5 downto 0) + 1;                       -- Increment header count on RX write enable
                     else
-                        rHdCnt <= rHdCnt;
+                        rHdCnt(5 downto 0) <= rHdCnt(5 downto 0);
                     end if;
                 else
-                    rHdCnt <= (others => '0');                     -- Clear header count in data state
+                    rHdCnt(5 downto 0) <= (others => '0');                     -- Clear header count in data state
                 end if;
             end if;
         end if;
@@ -131,14 +131,14 @@ Begin
     Begin
         if (rising_edge(Clk)) then
             if (RstB = '0') then
-                rRGBCnt <= "00";                                   -- Reset RGB count on active-low reset
+                rRGBCnt(1 downto 0) <= "00";                                   -- Reset RGB count on active-low reset
             else
-                if (rRGBCnt = "11" or rState = stHeader) then
-                    rRGBCnt <= "00";                               -- Reset RGB count in header state or when complete pixel
+                if (rRGBCnt(1 downto 0) = "11" or rState = stHeader) then
+                    rRGBCnt(1 downto 0) <= "00";                               -- Reset RGB count in header state or when complete pixel
                 elsif (RxWrEn = '1') then
-                    rRGBCnt <= rRGBCnt + 1;                        -- Increment RGB count on RX write enable
+                    rRGBCnt(1 downto 0) <= rRGBCnt(1 downto 0) + 1;                        -- Increment RGB count on RX write enable
                 else
-                    rRGBCnt <= rRGBCnt;
+                    rRGBCnt(1 downto 0) <= rRGBCnt(1 downto 0);
                 end if;
             end if;
         end if;
@@ -148,14 +148,14 @@ Begin
     Begin
         if (rising_edge(Clk)) then
             if (RstB = '0') then
-                rPxCnt <= (others => '0');                         -- Reset pixel count on active-low reset
+                rPxCnt(19 downto 0) <= (others => '0');                         -- Reset pixel count on active-low reset
             else
-                if (rPxCnt = 786432) then
-                    rPxCnt <= (others => '0');                     -- Reset pixel count when reaching the last pixel value
+                if (rPxCnt(19 downto 0) = 786432) then
+                    rPxCnt(19 downto 0) <= (others => '0');                     -- Reset pixel count when reaching the last pixel value
                 elsif (rHDMIFfWrEn = '1') then
-                    rPxCnt <= rPxCnt + 1;                          -- Increment pixel count when send pixel to FIFO
+                    rPxCnt(19 downto 0) <= rPxCnt(19 downto 0) + 1;                          -- Increment pixel count when send pixel to FIFO
                 else
-                    rPxCnt <= rPxCnt;
+                    rPxCnt(19 downto 0) <= rPxCnt(19 downto 0);
                 end if;    
             end if;
         end if;
@@ -180,7 +180,7 @@ Begin
             if (RstB='0') then
                 rHDMIFfWrEn <= '0';                               -- Clear HDMI FIFO write enable on active-low reset
             else
-                if (rRGBCnt = "11") then
+                if (rRGBCnt(1 downto 0) = "11") then
                     rHDMIFfWrEn <= '1';                            -- Set HDMI FIFO write enable when complete pixel
                 else
                     rHDMIFfWrEn <= '0';
@@ -197,7 +197,7 @@ Begin
             else
                 case (rState) is
                     when stHeader =>
-                        if (rHdCnt = 54) then
+                        if (rHdCnt(5 downto 0) = 54) then
                             rState <= stData;                   -- Transition to data state after discard all headers
                         else
                             rState <= stHeader;

@@ -52,7 +52,7 @@ Begin
 ----------------------------------------------------------------------------------
 -- Output assignment
 ----------------------------------------------------------------------------------
-	RxFfWrData	<=	rRxFfWrData;
+	RxFfWrData(7 downto 0)	<=	rRxFfWrData(7 downto 0);
 	RxFfWrEn	<=	rRxFfWrEn;
 
 
@@ -69,15 +69,15 @@ Begin
 	begin
 		if (rising_edge(Clk)) then
 			if (RstB = '0') then
-				rBaudCnt	<=	(others => '0'); 	-- Reset counter on active-low reset
-			elsif (rBaudCnt = conv_std_logic_vector(cBaudRate,10)) then
-				rBaudCnt	<=	(others => '0'); 	-- Reset counter at the end of a baud period
+				rBaudCnt(6 downto 0)	<=	(others => '0'); 	-- Reset counter on active-low reset
+			elsif (rBaudCnt(6 downto 0) = conv_std_logic_vector(cBaudRate,10)) then
+				rBaudCnt(6 downto 0)	<=	(others => '0'); 	-- Reset counter at the end of a baud period
 			elsif (rState = stStart and rBaudCnt(5) = '1') then
-				rBaudCnt	<=	(others => '0'); 	-- Reset counter at the middle of the start bit
+				rBaudCnt(6 downto 0)	<=	(others => '0'); 	-- Reset counter at the middle of the start bit
 			elsif (rState = stIdle) then
-				rBaudCnt	<=	(others => '0'); 	-- Reset counter in idle state
+				rBaudCnt(6 downto 0)	<=	(others => '0'); 	-- Reset counter in idle state
 			else
-				rBaudCnt	<=	rBaudCnt + 1;		-- Increment counter otherwise
+				rBaudCnt(6 downto 0)	<=	rBaudCnt(6 downto 0) + 1;		-- Increment counter otherwise
 			end if;
 		end if;
 	end process u_rBaudCnt;
@@ -87,7 +87,7 @@ Begin
 		if (rising_edge(Clk)) then
 			if (RstB = '0') then
 				rBaudEnd	<=	'0'; -- Clear flag on active-low reset
-			elsif (rBaudCnt = conv_std_logic_vector(cBaudRate,10)) then
+			elsif (rBaudCnt(6 downto 0) = conv_std_logic_vector(cBaudRate,10)) then
 				rBaudEnd	<=	'1'; -- Set flag at the end of a baud period
 			else 
 				rBaudEnd	<=	'0'; -- Clear flag otherwise
@@ -99,18 +99,18 @@ Begin
 	begin
 		if (rising_edge(Clk)) then
 			if (RstB = '0') then
-				rDataCnt <= (others => '0'); -- Reset data counter on active-low reset
+				rDataCnt(3 downto 0) <= (others => '0'); -- Reset data counter on active-low reset
 			else
 				if (rBaudEnd = '1') then
-					if (rDataCnt = 7) then
-						rDataCnt <= (others => '0'); -- Reset data counter at the end of 8 bits
+					if (rDataCnt(3 downto 0) = 7) then
+						rDataCnt(3 downto 0) <= (others => '0'); -- Reset data counter at the end of 8 bits
 					else
-						rDataCnt <= rDataCnt + 1; -- Increment data counter otherwise
+						rDataCnt(3 downto 0) <= rDataCnt(3 downto 0) + 1; -- Increment data counter otherwise
 					end if ;
 				elsif (rState = stStart) then
-					rDataCnt <= (others => '0'); -- Reset data counter in the start state
+					rDataCnt(3 downto 0) <= (others => '0'); -- Reset data counter in the start state
 				else
-					rDataCnt <=	rDataCnt; -- Maintain data counter otherwise
+					rDataCnt(3 downto 0) <=	rDataCnt(3 downto 0); -- Maintain data counter otherwise
 				end if;
 			end if;
 		end if;
@@ -131,7 +131,7 @@ Begin
 	begin
 		if (rising_edge(Clk)) then
 			if (RstB = '0') then
-				rRxFfWrData	<=	(others => '0'); -- Clear FIFO write data on active-low reset
+				rRxFfWrData(7 downto 0)	<=	(others => '0'); -- Clear FIFO write data on active-low reset
 			else
 				if (rBaudEnd = '1' and rState /= stStop) then	
 					rRxFfWrData(7 downto 0) <= rSerDataIn & rRxFfWrData(7 downto 1); -- Shift in data
@@ -180,7 +180,7 @@ Begin
 						end if;
 					
 					when stData =>
-						if (rDataCnt = 7 and rBaudEnd = '1') then
+						if (rDataCnt(2 downto 0) = 7 and rBaudEnd = '1') then
 							rState <= stStop; -- Transition to stop state after receiving 8 bits of data
 						else
 							rState <= stData; -- Stay in data state otherwise

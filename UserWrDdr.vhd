@@ -83,7 +83,7 @@ Begin
 	UWr2DFfRdCnt	<= T2UWrFfRdCnt;
 	
 	MtDdrWrReq		<= rMtDdrWrReq;
-	MtDdrWrAddr		<= rMtDdrWrAddr;
+	MtDdrWrAddr(28 downto 7)		<= rMtDdrWrAddr(28 downto 7);
 	
 ----------------------------------------------------------------------------------
 -- DFF 

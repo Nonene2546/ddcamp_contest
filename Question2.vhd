@@ -64,8 +64,6 @@ Entity Question2 Is
 		RESERVED		: in	std_logic_vector( 1 downto 0 );
 		
 		-- Basic IO Interface
-		Button			: in	std_logic;							-- active low 
-		LED				: out	std_logic_vector( 7 downto 0 );		-- active low LED (show status)
 		DipSwitch		: in 	std_logic_vector( 1 downto 0 )		-- DipSwitch select TestPatt
 	);
 End Entity Question2;
@@ -145,7 +143,6 @@ Architecture rtl Of Question2 Is
 		
 		SerDataIn	: in	std_logic;
 		
-		RxFfFull	: in	std_logic;
 		RxFfWrData	: out	std_logic_vector( 7 downto 0 );
 		RxFfWrEn	: out	std_logic
 	);
@@ -423,8 +420,7 @@ Begin
 		Clk			=> UserClk	,
 		
 		SerDataIn	=> RxSerData,
-		
-		RxFfFull	=> '0'		,
+
 		RxFfWrData	=> Rx2BWrData(7 downto 0),
 		RxFfWrEn	=> Rx2BWrEn
 	);

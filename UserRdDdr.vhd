@@ -90,7 +90,7 @@ Begin
     D2URdFfWrCnt    <= URd2HFfWrCnt;                          
     
     MtDdrRdReq      <= rMtDdrRdReq;                             
-    MtDdrRdAddr     <= rMtDdrRdAddr;                              
+    MtDdrRdAddr(28 downto 7)     <= rMtDdrRdAddr(28 downto 7);                              
     
 ----------------------------------------------------------------------------------
 -- DFF 
@@ -181,7 +181,7 @@ Begin
                 rMtDdrRdAddr(28 downto 7) <= (others => '0');           -- Reset memory read address on active-low reset
             elsif (rState = stAddr) then
                 if (rMtDdrRdAddr(26 downto 7) = "101" & x"FFF") then
-                    rMtDdrRdAddr <= (others => '0');                   -- Reset memory read address when reaching the maximum value
+                    rMtDdrRdAddr(28 downto 7) <= (others => '0');                   -- Reset memory read address when reaching the maximum value
                 else
                     rMtDdrRdAddr(26 downto 7) <= rMtDdrRdAddr(26 downto 7) + 1;  -- If not, Increment memory read address
                 end if;
