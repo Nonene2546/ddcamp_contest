@@ -28,9 +28,9 @@ Entity UserWrDdr Is
 
 		-- WrCtrl I/F
 		MemInitDone		: in	std_logic;
-		MtDdrWrReq		: out	std_logic;
-		MtDdrWrBusy		: in	std_logic;
-		MtDdrWrAddr		: out	std_logic_vector( 28 downto 7 );
+		MtDdrWrReq		: out	std_logic;  -- write request to ddr
+		MtDdrWrBusy		: in	std_logic;  -- input from ddr indicate that it has accept request if '1' or ready for new request if '0'
+		MtDdrWrAddr		: out	std_logic_vector( 28 downto 7 ); -- ddr address you want to write on
 		
 		-- T2UWrFf I/F
 		T2UWrFfRdEn		: out	std_logic;
