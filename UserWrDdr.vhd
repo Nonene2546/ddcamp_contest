@@ -70,7 +70,7 @@ Architecture rtl Of UserWrDdr Is
 							stEnd     -- End state (Wait for ddr ready for a new request -> MtDdrWrBusy = '0')
 						);
 						
-	signal rState		: SerStateType;
+	signal rState		: SerStateType; -- State variable
 	
 Begin
 
@@ -117,7 +117,7 @@ Begin
 					
 					when stReq =>
 						if (MtDdrWrBusy = '1') then
-							rState <= stAddr; -- Transition to write state if MtDdrWrBusy = '1' (ddr has accept previous request)
+							rState <= stAddr; -- Transition to address state if MtDdrWrBusy = '1' (ddr has accept request)
 						else
 							rState <= stReq; -- Stay in idle state otherwise
 						end if;
@@ -127,7 +127,7 @@ Begin
 					
 					when stEnd =>
 						if (MtDdrWrBusy = '0') then
-							rState <= stReq; -- Transition back to idle state when memory write is not busy
+							rState <= stReq; -- Transition back to idle state when ddr read is ready for a new request
 						else
 							rState <= stEnd; -- Stay in end state otherwise
 						end if;
