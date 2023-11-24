@@ -53,20 +53,20 @@ use IEEE.STD_LOGIC_ARITH.all;
 use IEEE.STD_LOGIC_UNSIGNED.all;
 
 Entity BitmapPattern Is
-	Port
-	(
-		RstB			: in	std_logic;
-		Clk				: in	std_logic;
+    Port
+    (
+        RstB            : in    std_logic;                          -- Active-low reset
+        Clk             : in    std_logic;                          -- Clock
 
-		-- RX input
-		RxWrData		: in	std_logic_vector(7 downto 0);
-		RxWrEn			: in	std_logic;
-		
-		-- HDMI Data Interface
-		HDMIFfWrEn		: out	std_logic;
-		HDMIFfWrData	: out	std_logic_vector( 23 downto 0 );
-		HDMIFfWrCnt		: in	std_logic_vector( 7 downto 0 )
-	);
+        -- RX input
+        RxWrData        : in    std_logic_vector(7 downto 0);       -- RX write data
+        RxWrEn          : in    std_logic;                          -- RX write enable
+        
+        -- HDMI Data Interface
+        HDMIFfWrEn      : out   std_logic;                          -- FIFO write enable
+        HDMIFfWrData    : out   std_logic_vector( 23 downto 0 );    -- FIFO write data
+        HDMIFfWrCnt     : in    std_logic_vector( 7 downto 0 )      -- FIFO write count
+    );
 End Entity BitmapPattern;
 
 Architecture rtl Of BitmapPattern Is
@@ -74,142 +74,143 @@ Architecture rtl Of BitmapPattern Is
 ----------------------------------------------------------------------------------
 -- Constant Declaration
 ----------------------------------------------------------------------------------
-	
+    -- No constants declared for this architecture
+
 ----------------------------------------------------------------------------------
 -- Signal declaration
 ----------------------------------------------------------------------------------
-	
-	type SerStateType Is 
-						(
-							stHeader,
-							stData
-						);
-						
-	signal	rState			: SerStateType;
-	
-	signal	rHDMIFfWrEn		: std_logic;
-	signal	rBitMap			: std_logic_vector(23 downto 0);
-
-	signal	rHdCnt			: std_logic_vector(5 downto 0);
-	signal	rRGBCnt			: std_logic_vector(1 downto 0);
-	signal	rPxCnt			: std_logic_vector(19 downto 0);
-	
+    
+    type SerStateType is 
+                        (
+                            stHeader,  -- Header state (discard the header)
+                            stData     -- Data state (pixelate and send the data from rx to FIFO)
+                        );
+                        
+    signal  rState          : SerStateType;                         -- State variable
+    
+    signal  rHDMIFfWrEn     : std_logic;                           -- FIFO write enable signal
+    signal  rBitMap         : std_logic_vector(23 downto 0);       -- Bitmap data (pixel)
+    
+    signal  rHdCnt          : std_logic_vector(5 downto 0);       -- Header count
+    signal  rRGBCnt         : std_logic_vector(1 downto 0);       -- RGB count
+    signal  rPxCnt          : std_logic_vector(19 downto 0);      -- Pixel count
+    
 Begin
 
 ----------------------------------------------------------------------------------
 -- Output assignment
 ----------------------------------------------------------------------------------
-	
-	HDMIFfWrEn					<= rHDMIFfWrEn;
-	HDMIFfWrData(23 downto 0)	<= rBitMap(23 downto 0);
-	
+    
+    HDMIFfWrEn                  <= rHDMIFfWrEn;                  
+    HDMIFfWrData(23 downto 0)   <= rBitMap(23 downto 0);         
+    
 ----------------------------------------------------------------------------------
 -- DFF 
 ----------------------------------------------------------------------------------
-	
-	u_rHdCnt : Process(Clk) IS
-	Begin
-		if(rising_edge(Clk)) then
-			if(RstB = '0') then
-				rHdCnt <= (others => '0');
-			else
-				if(rState = stHeader) then
-					if(RxWrEn = '1') then
-						rHdCnt <= rHdCnt + 1;
-					else
-						rHdCnt <= rHdCnt;
-					end if;
-				else
-					rHdCnt <= (others => '0');
-				end if;
-			end if;
-		end if;
-	end process u_rHdCnt;
-	
-	u_rRGBCnt : Process(Clk) IS
-	Begin
-		if(rising_edge(Clk)) then
-			if(RstB = '0') then
-				rRGBCnt <= "00";
-			else
-				if(rRGBCnt = "11" or rState = stHeader) then
-					rRGBCnt <= "00";
-				elsif(RxWrEn = '1') then
-					rRGBCnt <= rRGBCnt + 1;
-				else
-					rRGBCnt <= rRGBCnt;
-				end if;
-			end if;
-		end if;
-	end Process u_rRGBCnt;
-	
-	u_rPxCnt : Process(Clk) IS
-	Begin
-		if(rising_edge(Clk)) then
-			if(RstB = '0') then
-				rPxCnt <= (others => '0');
-			else
-				if(rPxCnt = 786432) then
-					rPxCnt <= (others => '0');
-				elsif(rHDMIFfWrEn = '1') then
-					rPxCnt <= rPxCnt + 1;
-				else
-					rPxCnt <= rPxCnt;
-				end if;	
-			end if;
-		end if;
-	end Process u_rPxCnt;
-	
-	u_rBitMap : Process(Clk) Is
-	Begin
-		if(rising_edge(Clk)) then
-			if(RstB = '0') then
-				rBitMap <= (others => '0');
-			elsif(RxWrEn = '1') then
-				rBitMap(23 downto 0) <= RxWrData(7 downto 0) & rBitMap(23 downto 8);
-			else
-				rBitMap <= rBitMap;
-			end if;	
-		end if;
-	end Process u_rBitMap;
-	
-	u_rHDMIFfWrEn : Process (Clk) Is
-	Begin
-		if ( rising_edge(Clk) ) then
-			if ( RstB='0' ) then
-				rHDMIFfWrEn <= '0';
-			else
-				if(rRGBCnt = "11") then
-					rHDMIFfWrEn <= '1';
-				else
-					rHDMIFfWrEn <= '0';
-				end if;
-			end if;
-		end if;
-	End Process u_rHDMIFfWrEn;
-	
-	u_rState : Process(Clk) IS
-	Begin
-		if(rising_edge(Clk)) then
-			if(RstB = '0') then
-				rState <= stHeader;
-			else
-				case(rState) IS
-					when stHeader =>
-						if(rHdCnt = 54) then
-							rState <= stData;
-						else
-							rState <= stHeader;
-						end if;
-						
-					when stData =>
-						if(rPxCnt = 786432) then
-							rState <= stHeader;
-						else
-							rState <= stData;
-						end if;
-				end case;
-			end if;
-		end if;
-	end process u_rState;
+    
+    u_rHdCnt : Process(Clk) IS
+    Begin
+        if (rising_edge(Clk)) then
+            if (RstB = '0') then
+                rHdCnt <= (others => '0');                          -- Reset header count on active-low reset
+            else
+                if (rState = stHeader) then
+                    if (RxWrEn = '1') then
+                        rHdCnt <= rHdCnt + 1;                       -- Increment header count on RX write enable
+                    else
+                        rHdCnt <= rHdCnt;
+                    end if;
+                else
+                    rHdCnt <= (others => '0');                     -- Clear header count in data state
+                end if;
+            end if;
+        end if;
+    end process u_rHdCnt;
+    
+    u_rRGBCnt : Process(Clk) IS
+    Begin
+        if (rising_edge(Clk)) then
+            if (RstB = '0') then
+                rRGBCnt <= "00";                                   -- Reset RGB count on active-low reset
+            else
+                if (rRGBCnt = "11" or rState = stHeader) then
+                    rRGBCnt <= "00";                               -- Reset RGB count in header state or when complete pixel
+                elsif (RxWrEn = '1') then
+                    rRGBCnt <= rRGBCnt + 1;                        -- Increment RGB count on RX write enable
+                else
+                    rRGBCnt <= rRGBCnt;
+                end if;
+            end if;
+        end if;
+    end Process u_rRGBCnt;
+    
+    u_rPxCnt : Process(Clk) IS
+    Begin
+        if (rising_edge(Clk)) then
+            if (RstB = '0') then
+                rPxCnt <= (others => '0');                         -- Reset pixel count on active-low reset
+            else
+                if (rPxCnt = 786432) then
+                    rPxCnt <= (others => '0');                     -- Reset pixel count when reaching the last pixel value
+                elsif (rHDMIFfWrEn = '1') then
+                    rPxCnt <= rPxCnt + 1;                          -- Increment pixel count when send pixel to FIFO
+                else
+                    rPxCnt <= rPxCnt;
+                end if;    
+            end if;
+        end if;
+    end Process u_rPxCnt;
+    
+    u_rBitMap : Process(Clk) IS
+    Begin
+        if (rising_edge(Clk)) then
+            if (RstB = '0') then
+                rBitMap <= (others => '0');                        -- Reset bitmap data on active-low reset
+            elsif (RxWrEn = '1') then
+                rBitMap(23 downto 0) <= RxWrData(7 downto 0) & rBitMap(23 downto 8);  -- Shift in RX write data to the bitmap
+            else
+                rBitMap <= rBitMap;
+            end if;    
+        end if;
+    end Process u_rBitMap;
+    
+    u_rHDMIFfWrEn : Process (Clk) is
+    Begin
+        if (rising_edge(Clk)) then
+            if (RstB='0') then
+                rHDMIFfWrEn <= '0';                               -- Clear HDMI FIFO write enable on active-low reset
+            else
+                if (rRGBCnt = "11") then
+                    rHDMIFfWrEn <= '1';                            -- Set HDMI FIFO write enable when complete pixel
+                else
+                    rHDMIFfWrEn <= '0';
+                end if;
+            end if;
+        end if;
+    end Process u_rHDMIFfWrEn;
+    
+    u_rState : Process(Clk) is
+    Begin
+        if (rising_edge(Clk)) then
+            if (RstB = '0') then
+                rState <= stHeader;                               -- Set state to header on active-low reset
+            else
+                case (rState) is
+                    when stHeader =>
+                        if (rHdCnt = 54) then
+                            rState <= stData;                   -- Transition to data state after discard all headers
+                        else
+                            rState <= stHeader;
+                        end if;
+                        
+                    when stData =>
+                        if (rPxCnt = 786432) then
+                            rState <= stHeader;                 -- Transition to header state after reaching the last pixel
+                        else
+                            rState <= stData;
+                        end if;
+                end case;
+            end if;
+        end if;
+    end process u_rState;
 End Architecture rtl;
